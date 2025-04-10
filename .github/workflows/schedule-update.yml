@@ -3,7 +3,7 @@ name: Weibo Monitor
 on:
   schedule:
     - cron: '*/15 * * * *'  # 每15分钟执行一次
-  workflow_dispatch:  # 允许手动触发
+ 
 
 jobs:
   monitor:
