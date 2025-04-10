@@ -132,7 +132,7 @@ def save_sent_items(items):
 if __name__ == "__main__":
     weibo = Weibo()
     topics, _ = weibo.get_hot_topic()
-    keywords = ['南京', '苏州', '无锡']
+    keywords = ['南京', '无锡', '徐州', '常州', '苏州', '南通', '连云港', '淮安', '盐城', '扬州', '镇江', '泰州', '宿迁', '江苏']
     filtered_desc = [item['desc'] for item in topics if any(keyword in item['desc'] for keyword in keywords)]
     
     if filtered_desc:
