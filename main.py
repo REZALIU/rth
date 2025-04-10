@@ -5,6 +5,8 @@ import time
 import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
+import os
+from datetime import datetime
 
 
 
@@ -106,39 +108,62 @@ class Weibo:
         return (items, resp)
 
 
+def load_sent_items():
+    """加载今天已发送的词条"""
+    # 确保 archive 文件夹存在
+    archive_dir = os.path.join(os.path.dirname(__file__), 'archive')
+    os.makedirs(archive_dir, exist_ok=True)
+    
+    filename = os.path.join(archive_dir, f"sent_items_{datetime.now().strftime('%Y%m%d')}.json")
+    if os.path.exists(filename):
+        with open(filename, 'r', encoding='utf-8') as f:
+            return set(json.load(f))
+    return set()
+
+def save_sent_items(items):
+    """保存已发送的词条"""
+    archive_dir = os.path.join(os.path.dirname(__file__), 'archive')
+    os.makedirs(archive_dir, exist_ok=True)
+    
+    filename = os.path.join(archive_dir, f"sent_items_{datetime.now().strftime('%Y%m%d')}.json")
+    with open(filename, 'w', encoding='utf-8') as f:
+        json.dump(list(items), f, ensure_ascii=False)
+
 if __name__ == "__main__":
     weibo = Weibo()
     topics, _ = weibo.get_hot_topic()
-    # 筛选包含指定城市的内容
     keywords = ['南京', '苏州', '无锡']
     filtered_desc = [item['desc'] for item in topics if any(keyword in item['desc'] for keyword in keywords)]
     
-    # 如果有匹配的内容，发送钉钉通知
     if filtered_desc:
-        extracted_texts_newline_separated = '\n'.join(filtered_desc)
-        post_data = {
-            'msgtype': 'text',
-            "at": {
-                "atMobiles": [
-                    "13770692226"
-                ],
-                "atUserIds": [
-                    "1ew_dng94tdxj5"
-                ],
-                "isAtAll": False
-            },
-            'text': {
-                "content": (time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())) + 
-                           "\n" +"微博新增实时上升热搜" + "\n" + 
-                          "每15分钟更新" + "\n\n" + 
-                          extracted_texts_newline_separated + "\n\n")
+        # 加载今天已发送的词条
+        sent_items = load_sent_items()
+        # 过滤出未发送的词条
+        new_items = [desc for desc in filtered_desc if desc not in sent_items]
+        
+        if new_items:
+            extracted_texts_newline_separated = '\n'.join(new_items)
+            post_data = {
+                'msgtype': 'text',
+                "at": {
+                    "atMobiles": ["13770692226"],
+                    "atUserIds": ["1ew_dng94tdxj5"],
+                    "isAtAll": False
+                },
+                'text': {
+                    "content": (time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())) + 
+                               "\n" + "微博新增实时上升热搜" + "\n" + 
+                               "每15分钟更新" + "\n\n" + 
+                               extracted_texts_newline_separated + "\n\n")
+                }
             }
-        }
-        headers = {
-            'Content-Type': 'application/json'
-        }
-        url = 'https://oapi.dingtalk.com/robot/send?access_token=c444192bb30e622f728047fe04421e58511082af4a6b27ea6412636247b2013a'
-        response = requests.post(url, headers=headers, data=json.dumps(post_data))
-    
-    # 打印结果
-    print('\n'.join(filtered_desc))
+            headers = {'Content-Type': 'application/json'}
+            url = 'https://oapi.dingtalk.com/robot/send?access_token=c444192bb30e622f728047fe04421e58511082af4a6b27ea6412636247b2013a'
+            response = requests.post(url, headers=headers, data=json.dumps(post_data))
+            
+            # 保存新发送的词条
+            sent_items.update(new_items)
+            save_sent_items(sent_items)
+        
+        # 打印结果
+        print('\n'.join(filtered_desc))
