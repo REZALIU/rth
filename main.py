@@ -54,17 +54,17 @@ class Weibo:
         try:
             with request_session() as s:
                 payload = {
-                    "containerid": "106003_-_type:25_-_filter_type:realtimespot",
+                    "containerid": "containerid=106003type%3D25%26t%3D3%26disable_hot%3D1%26filter_type%3Drealtimehot&title=微博热搜&show_cache_when_error=1&extparam=seat%3D1%26mi_cid%3D100103%26c_type%3D30%26pos%3D0_0%26cate%3D10103%26region_relas_conf%3D0%26dgr%3D0%26filter_type%3Drealtimehot%26lcate%3D1001%26display_time%3D1747276576%26pre_seqid%3D1747276576619023133119&luicode=20000174",
                     # "extparam": "seat%3D1%26position%3D%255B%255D%26dgr%3D0%26display_time%3D1650872180%26pre_seqid%3D16508721809380183149353",
-                    "luicode": "10000011",
-                    "lfid": "231583",
+                   # "luicode": "20000174",
+                   # "lfid": "231583",
                 }
                 resp = s.get(HOT_SEARCH_URL, params=payload)
                 j = resp.json()
                 if j["ok"] == 1:
                     cards = j["data"]["cards"]
                     if cards:
-                        items = cards[0]["card_group"]
+                        items = cards[1]["card_group"]
         except:
             logger.exception('get hot search failed')
         return (items, resp)
@@ -132,6 +132,7 @@ def save_sent_items(items):
 if __name__ == "__main__":
     weibo = Weibo()
     topics, _ = weibo.get_hot_topic()
+    print(topics)
     keywords = ['南京', '无锡', '徐州', '常州', '苏州', '南通', '连云港', '淮安', '盐城', '扬州', '镇江', '泰州', '宿迁', '江苏']
     filtered_desc = [item['desc'] for item in topics if any(keyword in item['desc'] for keyword in keywords)]
     
